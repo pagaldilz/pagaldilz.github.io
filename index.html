@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Future Value & Fee Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@linways/table-to-excel@1.0.4/dist/tableToExcel.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #007bff;
+        }
+        label {
+            display: block;
+            text-align: left;
+            font-weight: bold; 
+            margin-top: 15px;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .investment {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .investment input {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .remove-button {
+            background-color: #ff5733;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        #graph-container {
+            width: 80%;
+            margin: 20px auto;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Investment Future Value & Fee Calculator</h1>
+
+        <label for="years">Number of Years:</label>
+        <input type="number" id="years" placeholder="Enter Number of Years" required>
+
+        <label for="growthRate">Expected Annual Growth (%):</label>
+        <input type="number" id="growthRate" placeholder="Enter Expected Annual Growth" required>
+
+        <button onclick="addInvestment()">Add Investment</button>
+
+        <div id="investmentInputs">
+            <!-- Investment input fields will be added dynamically here -->
+        </div>
+
+        <button onclick="calculateFutureValue()">Calculate</button>
+
+        <p id="result"></p>
+    </div>
+
+	<div class="container">
+		<h2>Investments</h2>
+		<table id="investmentTable">
+			<thead>
+				<tr>
+					<th>Investment Name</th>
+					<th>Initial Balance</th>
+					<th>Employee Contribution</th>
+					<th>Employer Contribution</th>
+					<th>Expense Ratio (%)</th>
+					<th>Employee Frequency</th>
+					<th>Employer Frequency</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- Investment details will be added dynamically here -->
+			</tbody>
+		</table>
+		<button onclick="exportTableToCSV('investmentTable', 'InvestmentsAdded')">Download as CSV</button>
+		<button onclick="exportTableToExcel('investmentTable', 'InvestmentsAdded')">Download asExcel</button>
+	</div>
+
+	<div class="container">
+		<h2>Investment Summary</h2>
+		<table id="investmentSummaryTable">
+			<thead>
+				<tr>
+					<th>Investment Name</th>
+					<th>Total Employee Contribution</th>
+					<th>Total Employer Contribution</th>
+					<th>Total Fee(s) Paid</th>
+					<th>Total Investment Value</th>
+					<th>Expense Ratio (%)</th> <!-- Add the "Expense Ratio (%)" column -->
+
+				</tr>
+			</thead>
+			<tbody>
+				<!-- Investment summary rows will be added dynamically here -->
+			</tbody>
+		</table>
+		<button onclick="exportTableToCSV('investmentSummaryTable', 'InvestmentSummary')">Download as CSV</button>
+		<button onclick="exportTableToExcel('investmentSummaryTable', 'InvestmentSummary')">Download asExcel</button>
+	</div>
+
+    <div id="graph-container">
+        <h2>Total Amount and Expense Fee by Year</h2>
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="container">
+        <h2>Total Amounts and Expense Fees by Year (Table)</h2>
+        <table id="resultTable">
+            <!-- Table rows will be added dynamically here -->
+        </table>
+		<button onclick="exportTableToCSV('resultTable', 'InvestmentDetails')">Download as CSV</button>
+		<button onclick="exportTableToExcel('resultTable', 'InvestmentDetails')">Download asExcel</button>
+    </div>
+<!----------------------------->
+    <div class="container">
+        <h2>Combined Investment Value and Expense Fees (Table)</h2>
+        <table id="combinedResultTable">
+            <!-- Table rows will be added dynamically here -->
+        </table>
+        <button onclick="exportTableToCSV('combinedResultTable', 'Combined_Investments')">Download as CSV</button>
+		<button onclick="exportTableToExcel('combinedResultTable', 'Combined_Investments')">Download as Excel</button>
+    </div>
+
+    <div id="graph-container">
+        <h2>Combined Investment Value and Expense Fees</h2>
+        <canvas id="combinedBarChart"></canvas>
+    </div>
+
+<button onclick="downloadChartImage()">Download Graph as Image</button>
+
+	<div id="contributionsGainsContainer">
+		<h2>Investment Contributions and Gains</h2>
+		<canvas id="contributionsGainsChart"></canvas>
+	</div>
+
+<button onclick="downloadChartImage()">Download Graph as Image</button>
+	
+    <script>
+        let investmentCount = 0;
+        let years = 0;
+
+        // Arrays to store investment data
+        const investmentNames = [];
+        const initialBalances = [];
+        const employeeContributions = [];
+        const employerContributions = [];
+        const expenseRatios = [];
+        const employeeContributionFrequencies = [];
+        const employerContributionFrequencies = [];
+        const investmentsData = [];
+
+		function addInvestment() {
+			investmentCount++;
+			const investmentInputs = document.getElementById("investmentInputs");
+			const newInvestment = document.createElement("div");
+			newInvestment.classList.add("investment");
+
+			// Generate unique IDs for each input field
+			const idPrefix = `investment_${investmentCount}_`;
+			
+			newInvestment.innerHTML = `
+				<input type="text" id="${idPrefix}name" placeholder="Investment Name" required>
+				<input type="number" id="${idPrefix}initialBalance" placeholder="Initial Balance" required>
+				<input type="number" id="${idPrefix}employeeContribution" placeholder="Employee Contribution" required>
+				<input type="number" id="${idPrefix}employerContribution" placeholder="Employer Contribution" required>
+				<input type="number" id="${idPrefix}expenseRatio" placeholder="Expense Ratio (%)" required>
+				<select class="employee-frequency" id="${idPrefix}employeeFrequency" required>
+					<option value="weekly">Weekly</option>
+					<option value="bi-weekly">Bi-Weekly</option>
+					<option value="bi-monthly">Bi-Monthly</option>
+					<option value="monthly">Monthly</option>
+					<option value="yearly">Yearly</option>
+				</select>
+				<select class="employer-frequency" id="${idPrefix}employerFrequency" required>
+					<option value="weekly">Weekly</option>
+					<option value="bi-weekly">Bi-Weekly</option>
+					<option value="bi-monthly">Bi-Monthly</option>
+					<option value="monthly">Monthly</option>
+					<option value="yearly">Yearly</option>
+				</select>
+				<button class="remove-button" onclick="removeInvestment(this)">Remove</button>
+			`;
+
+			investmentInputs.appendChild(newInvestment);
+
+			// Attach event listeners to the input fields
+			const inputFields = newInvestment.querySelectorAll("input, select");
+			inputFields.forEach(input => {
+				input.addEventListener("input", updateInvestmentTable);
+			});
+			
+			// Call the function to update the investment summary table
+			updateInvestmentSummaryTable();
+		}
+
+
+		// Function to remove an investment input field
+		function removeInvestment(button) {
+			investmentCount--;
+			const investmentInputs = document.getElementById("investmentInputs");
+			investmentInputs.removeChild(button.parentElement);
+
+			// Remove the corresponding row from the investment table
+			const investmentTable = document.getElementById("investmentTable").querySelector("tbody");
+			const rowIndex = button.parentElement.rowIndex - 1;
+			investmentTable.deleteRow(rowIndex);
+			
+			// Call the function to update the investment summary table
+			updateInvestmentSummaryTable();	
+			
+		}
+
+
+		// Function to calculate the future value
+		function calculateFutureValue() {
+			years = parseInt(document.getElementById("years").value);
+			const growthRate = parseFloat(document.getElementById("growthRate").value) / 100;
+			
+			// Clear previous data
+			investmentNames.length = 0;
+			initialBalances.length = 0;
+			employeeContributions.length = 0;
+			employerContributions.length = 0;
+			expenseRatios.length = 0;
+			employeeContributionFrequencies.length = 0;
+			employerContributionFrequencies.length = 0;
+			investmentsData.length = 0;
+
+			const investmentInputs = document.querySelectorAll(".investment");
+
+			for (let i = 0; i < investmentInputs.length; i++) {
+				const investmentInput = investmentInputs[i].querySelectorAll("input, select");
+				const investmentName = investmentInput[0].value;
+				const initialBalance = parseFloat(investmentInput[1].value);
+				const employeeContribution = parseFloat(investmentInput[2].value);
+				const employerContribution = parseFloat(investmentInput[3].value);
+				const expenseRatio = parseFloat(investmentInput[4].value) / 100;
+				const employeeContributionFrequency = investmentInput[5].value;
+				const employerContributionFrequency = investmentInput[6].value;
+
+				investmentNames.push(investmentName);
+				initialBalances.push(initialBalance);
+				employeeContributions.push({ amount: employeeContribution, frequency: employeeContributionFrequency });
+				employerContributions.push({ amount: employerContribution, frequency: employerContributionFrequency });
+				expenseRatios.push(expenseRatio);
+
+				let startBalance = initialBalance;
+				let endBalance = startBalance;
+				const investmentData = [];
+
+				for (let year = 1; year <= years; year++) {
+					const employeeContributionAmount = calculateContribution(employeeContribution, employeeContributionFrequency, year);
+					const employerContributionAmount = calculateContribution(employerContribution, employerContributionFrequency, year);
+					const interest = endBalance * growthRate;
+					const expense = endBalance * expenseRatio;
+					endBalance += employeeContributionAmount + employerContributionAmount + interest - expense;
+					investmentData.push({ value: endBalance.toFixed(2), expenseFee: (expense).toFixed(2) });
+					startBalance = endBalance;
+				}
+
+				investmentsData.push(investmentData);
+
+			}
+
+			document.getElementById("result").textContent = '';
+
+			// Update the bar chart
+			updateBarChart(years);
+
+			// Update the result table
+			updateResultTable(years);
+
+			// Update the combined result table
+			updateCombinedResultTable(years);
+
+			// Call the function to update the combined bar chart
+			updateCombinedBarChart(years);
+			
+			// Update the investment summary table
+			updateInvestmentSummaryTable();
+			
+			// Call the function to update the investment details table
+			updateInvestmentDetailsTable();
+			
+			// Call the function to update the Contributions and Gains chart
+			updateContributionsGainsChart();
+		}
+
+        // Function to calculate contributions based on frequency
+        function calculateContribution(amount, frequency, year) {
+            switch (frequency) {
+                case "weekly":
+                    return (amount * 52);
+                case "bi-weekly":
+                    return (amount * 26);
+                case "bi-monthly":
+                    return (amount * 24);
+                case "monthly":
+                    return (amount * 12);
+                case "yearly":
+                    return amount;
+                default:
+                    return amount;
+            }
+        }
+
+        // Function to update the bar chart
+        function updateBarChart(years) {
+            const labels = Array.from({ length: years }, (_, i) => `Year ${i + 1}`);
+            const datasets = [];
+
+            for (let i = 0; i < investmentCount; i++) {
+                const dataset = {
+                    label: investmentNames[i],
+                    data: investmentsData[i].map(item => item.value),
+                    backgroundColor: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 0.6)`,
+                    borderColor: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`,
+                    borderWidth: 1,
+                    type: 'bar'
+                };
+
+                const expenseDataset = {
+                    label: `${investmentNames[i]} Expense Fee`,
+                    data: investmentsData[i].map(item => item.expenseFee),
+                    backgroundColor: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 0.6)`,
+                    borderColor: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`,
+                    borderWidth: 1,
+                    type: 'line'
+                };
+
+                datasets.push(dataset);
+                datasets.push(expenseDataset);
+            }
+
+            const ctx = document.getElementById("barChart").getContext("2d");
+            if (window.myChart) {
+                window.myChart.destroy(); // Destroy previous chart to update
+            }
+            window.myChart = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Total Amount and Expense Fee by Year',
+                        },
+                    },
+                }
+            });
+        }
+//------------------------------------------------------------------------------------------------------
+function updateResultTable(years) {
+    const table = document.getElementById("resultTable");
+    const headerRow = document.createElement("tr");
+    const totalSumRow = document.createElement("tr");
+
+    // Header row
+    headerRow.innerHTML = "<th>Year</th>";
+    totalSumRow.innerHTML = "<td><strong>Total Sum</strong></td>";
+
+    // Loop through investments to create header cells and total cells
+    for (let i = 0; i < investmentCount; i++) {
+        headerRow.innerHTML += `<th>${investmentNames[i]} Value</th><th>${investmentNames[i]} Expense Fee</th>`;
+        totalSumRow.innerHTML += `<td></td><td></td>`;
+    }
+
+    table.innerHTML = ""; // Clear the existing table content
+    table.appendChild(headerRow); // Add the header row
+
+    // Calculate and add data rows for each year
+    for (let i = 0; i < years; i++) {
+        const dataRow = document.createElement("tr");
+        const year = i + 1;
+        dataRow.innerHTML = `<td>Year ${year}</td>`;
+
+        // Loop through each investment and calculate values
+        for (let j = 0; j < investmentCount; j++) {
+            const value = investmentsData[j][i].value;
+            const expenseFee = investmentsData[j][i].expenseFee;
+            dataRow.innerHTML += `<td>${value}</td><td>${expenseFee}</td>`;
+        }
+
+        table.appendChild(dataRow); // Add the data row
+    }
+
+    // Calculate and add the total sum row for each investment
+    for (let i = 0; i < investmentCount; i++) {
+        const totalAmountSum = investmentsData[i].reduce((acc, item) => acc + parseFloat(item.value), 0);
+        const totalExpenseSum = investmentsData[i].reduce((acc, item) => acc + parseFloat(item.expenseFee), 0);
+        totalSumRow.cells[i * 2 + 1].textContent = totalAmountSum.toFixed(2);
+        totalSumRow.cells[i * 2 + 2].textContent = totalExpenseSum.toFixed(2);
+    }
+
+    table.appendChild(totalSumRow); // Add the total sum row
+}
+
+
+//------------------------------------------------------------------------------------------------------
+		// Function to export table data to CSV
+		function exportTableToCSV(tableId, filename) {
+			const table = document.getElementById(tableId);
+			const rows = table.querySelectorAll('tr');
+			let csvContent = "data:text/csv;charset=utf-8,";
+
+			// Loop through each row and convert it to CSV format
+			rows.forEach(function (row, index) {
+				const rowData = [];
+				const cols = row.querySelectorAll('td, th');
+				cols.forEach(function (col) {
+					rowData.push(col.textContent);
+				});
+				csvContent += rowData.join(',') + "\n";
+			});
+
+			// Create a data URI and set it as the href of a download link
+			const encodedUri = encodeURI(csvContent);
+			const link = document.createElement("a");
+			link.setAttribute("href", encodedUri);
+			link.setAttribute("download", filename);
+			document.body.appendChild(link);
+
+			// Trigger the link to initiate the download
+			link.click();
+			document.body.removeChild(link);
+		}
+//----------------------------------------------------------------------------------------
+		// Function to export a table to Excel with timestamp
+		function exportTableToExcel(tableId, filenamePrefix) {
+			// Get the current timestamp
+			const timestamp = new Date().toISOString().replace(/:/g, "-");
+
+			// Construct the filename with the timestamp
+			const filename = `${filenamePrefix}_${timestamp}.xlsx`;
+
+			// Get the table element by its ID
+			const table = document.getElementById(tableId);
+
+			// Convert the table to a worksheet
+			const ws = XLSX.utils.table_to_sheet(table);
+
+			// Create a new workbook
+			const wb = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+			// Save the workbook as an Excel file
+			XLSX.writeFile(wb, filename);
+		}
+//------------------------------------------------------------------------------------------------------
+        // Function to update the combined result table
+        function updateCombinedResultTable(years) {
+            const table = document.getElementById("combinedResultTable");
+            table.innerHTML = "";
+
+            // Header row
+            const headerRow = document.createElement("tr");
+            headerRow.innerHTML = "<th>Year</th><th>Total Investment Value</th><th>Total Expense Fee</th>";
+            table.appendChild(headerRow);
+
+            // Data rows
+            for (let i = 0; i < years; i++) {
+                const dataRow = document.createElement("tr");
+                const year = i + 1;
+
+                const totalAmountSum = investmentsData.reduce((acc, data) => {
+                    return acc + parseFloat(data[i].value);
+                }, 0);
+
+                const totalExpenseSum = investmentsData.reduce((acc, data) => {
+                    return acc + parseFloat(data[i].expenseFee);
+                }, 0);
+
+                dataRow.innerHTML = `<td>Year ${year}</td><td>${totalAmountSum.toFixed(2)}</td><td>${totalExpenseSum.toFixed(2)}</td>`;
+                table.appendChild(dataRow);
+            }
+
+            // Calculate and add the total sum row
+            const totalSumRow = document.createElement("tr");
+            totalSumRow.innerHTML = "<td><strong>Total Sum</strong></td>";
+
+            const totalAmountSum = investmentsData.reduce((acc, data) => {
+                return acc + data.reduce((sum, item) => sum + parseFloat(item.value), 0);
+            }, 0);
+
+            const totalExpenseSum = investmentsData.reduce((acc, data) => {
+                return acc + data.reduce((sum, item) => sum + parseFloat(item.expenseFee), 0);
+            }, 0);
+
+            totalSumRow.innerHTML += `<td><strong>${totalAmountSum.toFixed(2)}</strong></td><td><strong>${totalExpenseSum.toFixed(2)}</strong></td>`;
+            table.appendChild(totalSumRow);
+        }
+
+        // Function to update the combined bar chart for the combined investment data
+        function updateCombinedBarChart(years) {
+            const labels = Array.from({ length: years }, (_, i) => `Year ${i + 1}`);
+            const datasets = [];
+            const totalAmountSums = [];
+            const totalExpenseSums = [];
+
+            for (let i = 0; i < years; i++) {
+                const totalAmountSum = investmentsData.reduce((acc, data) => {
+                    return acc + parseFloat(data[i].value);
+                }, 0);
+
+                const totalExpenseSum = investmentsData.reduce((acc, data) => {
+                    return acc + parseFloat(data[i].expenseFee);
+                }, 0);
+
+                totalAmountSums.push(totalAmountSum);
+                totalExpenseSums.push(totalExpenseSum);
+            }
+
+            datasets.push({
+                label: 'Total Investment Value',
+                data: totalAmountSums,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            });
+
+            datasets.push({
+                label: 'Total Expense Fee',
+                data: totalExpenseSums,
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+            });
+
+            const ctx = document.getElementById('combinedBarChart').getContext('2d');
+            if (window.myCombinedChart) {
+                window.myCombinedChart.destroy(); // Destroy previous chart to update
+            }
+            window.myCombinedChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets,
+                },
+                options: {
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Total Investment Value and Expense Fee by Year (Combined)',
+                        },
+                    },
+                },
+            });
+        }
+
+
+//---------------------------------------------------------------------
+// Function to download the chart as an image
+function downloadChartImage() {
+    const chartCanvas = document.getElementById("combinedBarChart");
+    const chartImage = chartCanvas.toDataURL("image/png");
+    
+    // Create a download link for the chart image
+    const downloadLink = document.createElement("a");
+    downloadLink.href = chartImage;
+    downloadLink.download = "combined_investment_chart.png";
+    
+    // Trigger a click event to start the download
+    downloadLink.click();
+}
+
+		// Function to update Investment summary table
+		function updateInvestmentTable() {
+			const investmentTable = document.getElementById("investmentTable").querySelector("tbody");
+			investmentTable.innerHTML = ""; // Clear the existing table rows
+
+			// Loop through all investments and add them to the table
+			for (let i = 1; i <= investmentCount; i++) {
+				const idPrefix = `investment_${i}_`;
+				
+				const investmentName = document.getElementById(`${idPrefix}name`).value;
+				const initialBalance = parseFloat(document.getElementById(`${idPrefix}initialBalance`).value);
+				const employeeContribution = parseFloat(document.getElementById(`${idPrefix}employeeContribution`).value);
+				const employerContribution = parseFloat(document.getElementById(`${idPrefix}employerContribution`).value);
+				const expenseRatio = parseFloat(document.getElementById(`${idPrefix}expenseRatio`).value) / 100;
+				const employeeFrequency = document.getElementById(`${idPrefix}employeeFrequency`).value;
+				const employerFrequency = document.getElementById(`${idPrefix}employerFrequency`).value;
+
+				// Add the investment data to the table
+				const newRow = investmentTable.insertRow();
+				newRow.innerHTML = `
+					<td>${investmentName}</td>
+					<td>${initialBalance}</td>
+					<td>${employeeContribution}</td>
+					<td>${employerContribution}</td>
+					<td>${expenseRatio}</td>
+					<td>${employeeFrequency}</td>
+					<td>${employerFrequency}</td>
+				`;
+				
+				// Then, call the function to update the Investment Summary table
+				updateInvestmentSummaryTable();
+			}
+		}
+
+		// Add a unique class to each row in the Investment Summary table
+		function addInvestmentSummaryRow(investmentName, totalExpenseFee, endValue, expenseRatioPercentage) {
+			const summaryTable = document.getElementById("investmentSummaryTable").querySelector("tbody");
+
+			const newRow = document.createElement("tr");
+			newRow.classList.add(`summary-row-${investmentName}`); // Add a unique class for this row
+
+			newRow.innerHTML = `
+				<td>${investmentName}</td>
+				<td>${totalExpenseFee.toFixed(2)}</td>
+				<td>${endValue.toFixed(2)}</td>
+				<td>${expenseRatioPercentage}</td>
+			`;
+
+			summaryTable.appendChild(newRow);
+		}
+
+// Function to update the Investment Summary table
+function updateInvestmentSummaryTable() {
+    const summaryTable = document.getElementById("investmentSummaryTable").querySelector("tbody");
+    summaryTable.innerHTML = ""; // Clear existing rows
+
+    for (let i = 0; i < investmentCount; i++) {
+        const investmentName = investmentNames[i];
+        const totalExpenseFee = investmentsData[i].reduce((sum, item) => sum + parseFloat(item.expenseFee), 0);
+        
+        // Calculate total employee contribution for this investment
+        const totalEmployeeContribution = calculateTotalEmployeeContribution(i);
+
+        // Calculate total employer contribution for this investment
+        const totalEmployerContribution = calculateTotalEmployerContribution(i);
+
+        // Get the end value of the investment (value at the end of the specified number of years)
+        const endValue = parseFloat(investmentsData[i][years - 1].value);
+
+        // Retrieve the expense ratio for this investment
+        const expenseRatio = parseFloat(expenseRatios[i]);
+
+        // Check if the expense ratio is a valid number
+        const expenseRatioPercentage = isNaN(expenseRatio) ? 'N/A' : (expenseRatio * 100).toFixed(2) + '%';
+
+        // Create and append the updated row
+        addInvestmentSummaryRow(investmentName, totalExpenseFee, endValue, expenseRatioPercentage, totalEmployeeContribution, totalEmployerContribution);
+    }
+}
+
+// Function to add a row to the Investment Summary table
+function addInvestmentSummaryRow(investmentName, totalExpenseFee, endValue, expenseRatioPercentage, totalEmployeeContribution, totalEmployerContribution) {
+    const summaryTable = document.getElementById("investmentSummaryTable").querySelector("tbody");
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+        <td>${investmentName}</td>
+        <td>${totalEmployeeContribution.toFixed(2)}</td>
+        <td>${totalEmployerContribution.toFixed(2)}</td>
+        <td>${totalExpenseFee.toFixed(2)}</td>
+        <td>${endValue.toFixed(2)}</td>
+        <td>${expenseRatioPercentage}</td>
+    `;
+    summaryTable.appendChild(newRow);
+}
+
+
+// Function to calculate the total employee contribution for a specific investment
+function calculateTotalEmployeeContribution(investmentIndex) {
+    const frequency = employeeContributions[investmentIndex].frequency;
+    const amount = employeeContributions[investmentIndex].amount;
+    return calculateContribution(amount, frequency, years) * years; // Multiply by years
+}
+
+// Function to calculate the total employer contribution for a specific investment
+function calculateTotalEmployerContribution(investmentIndex) {
+    const frequency = employerContributions[investmentIndex].frequency;
+    const amount = employerContributions[investmentIndex].amount;
+    return calculateContribution(amount, frequency, years) * years; // Multiply by years
+}
+
+
+//------------------------------------9/24/2023------------------------------------
+// Function to update the Contributions and Gains chart
+function updateContributionsGainsChart() {
+    const chartCanvas = document.getElementById("contributionsGainsChart").getContext("2d");
+
+    // Destroy the previous chart if it exists
+    if (contributionsGainsChart) {
+        contributionsGainsChart.destroy();
+    }
+	
+    // Prepare data for the chart
+    const labels = Array.from({ length: years }, (_, i) => `Year ${i + 1}`);
+    const datasets = [];
+    
+    // Add initial contribution dataset
+    const initialContributionData = investmentsData.map((investment) =>
+        investment.map((item) => parseFloat(item.initialContribution))
+    );
+    datasets.push({
+        label: "Initial Contribution",
+        data: initialContributionData,
+        borderColor: "rgba(255, 99, 132, 1)",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        borderWidth: 1,
+        fill: false,
+    });
+
+    // Add employee contribution dataset
+    const employeeContributionData = investmentsData.map((investment) =>
+        investment.map((item) => parseFloat(item.employeeContribution))
+    );
+    datasets.push({
+        label: "Employee Contribution",
+        data: employeeContributionData,
+        borderColor: "rgba(54, 162, 235, 1)",
+        backgroundColor: "rgba(54, 162, 235, 0.2)",
+        borderWidth: 1,
+        fill: false,
+    });
+
+    // Add employer contribution dataset
+    const employerContributionData = investmentsData.map((investment) =>
+        investment.map((item) => parseFloat(item.employerContribution))
+    );
+    datasets.push({
+        label: "Employer Contribution",
+        data: employerContributionData,
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        borderWidth: 1,
+        fill: false,
+    });
+
+    // Add gains dataset
+    const gainsData = investmentsData.map((investment) =>
+        investment.map((item) => parseFloat(item.gains))
+    );
+    datasets.push({
+        label: "Gains",
+        data: gainsData,
+        borderColor: "rgba(255, 206, 86, 1)",
+        backgroundColor: "rgba(255, 206, 86, 0.2)",
+        borderWidth: 1,
+        fill: false,
+    });
+
+    // Create the chart
+    contributionsGainsChart = new Chart(chartCanvas, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: datasets,
+        },
+        options: {
+            scales: {
+                x: {
+                    stacked: true,
+                },
+                y: {
+                    stacked: true,
+                },
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "top",
+                },
+                title: {
+                    display: true,
+                    text: "Investment Contributions and Gains",
+                },
+            },
+        },
+    });
+}
+
+
+
+
+
+//------------------------------------9/24/2023------------------------------------
+	// Function to update the investment details table
+/*	function updateInvestmentDetailsTable() {
+		const table = document.getElementById("investmentDetailsTable").querySelector("tbody");
+		table.innerHTML = ""; // Clear existing rows
+
+		for (let i = 0; i < investmentCount; i++) {
+			const investmentName = investmentNames[i];
+			const totalEmployeeContribution = calculateTotalEmployeeContribution(i);
+			const totalEmployerContribution = calculateTotalEmployerContribution(i);
+			const investmentValue = parseFloat(investmentsData[i][years - 1].value);
+
+			const newRow = document.createElement("tr");
+			newRow.innerHTML = `
+				<td>${investmentName}</td>
+				<td>${totalEmployeeContribution.toFixed(2)}</td>
+				<td>${totalEmployerContribution.toFixed(2)}</td>
+				<td>${investmentValue.toFixed(2)}</td>
+			`;
+
+			table.appendChild(newRow); // Add a row for each investment
+		}
+	}*/
+/*
+// Function to calculate the total employee contribution for a specific investment
+function calculateTotalEmployeeContribution(investmentIndex) {
+    const frequency = employeeContributions[investmentIndex].frequency;
+    const amount = employeeContributions[investmentIndex].amount;
+    return calculateContribution(amount, frequency, years) * years; // Multiply by years
+}
+
+// Function to calculate the total employer contribution for a specific investment
+function calculateTotalEmployerContribution(investmentIndex) {
+    const frequency = employerContributions[investmentIndex].frequency;
+    const amount = employerContributions[investmentIndex].amount;
+    return calculateContribution(amount, frequency, years) * years; // Multiply by years
+}
+*/
+
+
+
+
+
+//------------------------------------------------------------------------
+
+		// Function to add event listeners to input fields
+		function addEventListeners() {
+			const yearsInput = document.getElementById("years");
+			const growthRateInput = document.getElementById("growthRate");
+
+			yearsInput.addEventListener("input", handleInputChange);
+			growthRateInput.addEventListener("input", handleInputChange);
+		}
+
+		// Function to handle input changes and recalculate data
+		function handleInputChange() {
+			calculateFutureValue();
+		}
+
+		
+		// Add event listeners when the page loads
+		window.addEventListener("load", function () {
+			addEventListeners();
+		});
+
+    </script>
+</body>
+</html>
