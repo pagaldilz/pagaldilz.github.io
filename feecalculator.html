@@ -172,21 +172,7 @@
 		<button onclick="exportTableToExcel('combinedResultTable', 'Combined_Investments')">Download as Excel</button>
     </div>
 
-	<!-- Add a new table for withdrawal amounts -->
-	<h2>Withdrawal Amounts</h2>
-	<table id="withdrawalTable" class="result-table">
-	  <thead>
-		<tr>
-		  <th>Year</th>
-		  <!-- Add headers for each investment -->
-		  <!-- Example: <th>Investment 1 Withdrawal</th> -->
-		</tr>
-	  </thead>
-	  <tbody>
-		<!-- Data rows will be added dynamically using JavaScript -->
-	  </tbody>
-	</table>
-<!----------------------------->
+
 	<button id="exportAllTables">All Tables Export to Excel</button>
 
 <!----------------------------->
@@ -294,7 +280,7 @@
 
 
 
-/* 		// Function to calculate the future value
+		// Function to calculate the future value
 		function calculateFutureValue() {
 			years = parseInt(document.getElementById("years").value);
 			const growthRate = parseFloat(document.getElementById("growthRate").value) / 100;
@@ -369,79 +355,8 @@
 			// Call the function to update the combined bar chart
 			updateCombinedBarChart(years);			
 		}
- */
-		 // Function to calculate the future value with a 4% withdrawal rate
-		function calculateFutureValue() {
-		  const years = 99; // Calculate value until age 99
-		  const growthRate = parseFloat(document.getElementById("growthRate").value) / 100;
-		  const withdrawalRate = 0.04; // 4% withdrawal rate
 
-		  // Clear previous data
-		  investmentNames.length = 0;
-		  initialBalances.length = 0;
-		  employeeContributions.length = 0;
-		  employerContributions.length = 0;
-		  expenseRatios.length = 0;
-		  employeeContributionFrequencies.length = 0;
-		  employerContributionFrequencies.length = 0;
-		  investmentsData.length = 0;
 
-		  const investmentInputs = document.querySelectorAll(".investment");
-
-		  for (let i = 0; i < investmentInputs.length; i++) {
-			const investmentInput = investmentInputs[i].querySelectorAll("input, select");
-			const investmentName = investmentInput[0].value;
-			const initialBalance = parseFloat(investmentInput[1].value);
-			const employeeContribution = parseFloat(investmentInput[2].value);
-			const employerContribution = parseFloat(investmentInput[3].value);
-			const expenseRatio = parseFloat(investmentInput[4].value) / 100;
-			const employeeContributionFrequency = investmentInput[5].value;
-			const employerContributionFrequency = investmentInput[6].value;
-
-			investmentNames.push(investmentName);
-			initialBalances.push(initialBalance);
-			employeeContributions.push({ amount: employeeContribution, frequency: employeeContributionFrequency });
-			employerContributions.push({ amount: employerContribution, frequency: employerContributionFrequency });
-			expenseRatios.push(expenseRatio);
-
-			let startBalance = initialBalance;
-			let endBalance = startBalance;
-			const investmentData = [];
-
-			for (let year = 1; year <= years; year++) {
-			  const employeeContributionAmount = calculateContribution(employeeContribution, employeeContributionFrequency, year);
-			  const employerContributionAmount = calculateContribution(employerContribution, employerContributionFrequency, year);
-			  const interest = endBalance * growthRate;
-			  const expense = endBalance * expenseRatio;
-			  const withdrawal = endBalance * withdrawalRate;
-			  endBalance += employeeContributionAmount + employerContributionAmount + interest - expense - withdrawal;
-			  investmentData.push({ value: endBalance.toFixed(2), expenseFee: (expense).toFixed(2), withdrawalAmount: (withdrawal).toFixed(2) });
-			  startBalance = endBalance;
-			}
-
-			investmentsData.push(investmentData);
-		  }
-
-		  document.getElementById("result").textContent = '';
-
-		  // Update the result table
-		  updateResultTable(years);
-
-		  // Update the investment summary table
-		  updateInvestmentSummaryTable();
-
-		  // Update the combined result table
-		  updateCombinedResultTable(years);
-
-		  // Update the withdrawal table
-		  updateWithdrawalTable(years);
-
-		  // Update the bar chart
-		  updateBarChart(years);
-
-		  // Call the function to update the combined bar chart
-		  updateCombinedBarChart(years);
-		}
 
 
         // Function to calculate contributions based on frequency
